@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "radio-scrobble"
+description = "Radio scrobble to lastfm and spotify"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.9"
+licence="MIT"
+dependencies = [
+    "pylast~=5.0",
+    "spotipy~=2.0",
+    "pydantic~=1.0",
+    "pyyaml~=6.0"
+]
+
+[project.entry-points.console_scripts]
+radio-scrobble = "lf_scrobbler.lastfm_radio_scrobble:main"
+
+[tool.hatch.build]
+include = ["lf_scrobbler/*"]
