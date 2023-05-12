@@ -2,13 +2,22 @@ import argparse
 import re
 import time
 import datetime
-import urllib.request
+from typing import NamedTuple, Optional
 import yaml
+import requests
 
 import pylast
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from .config_schema import Config
+
+class Track(NamedTuple):
+    """Track description"""
+    artist: str
+    title: str
+
+    def __str__(self) -> str:
+        return f"Artist: {self.artist}, Title: {self.title}"
 
 class RadioScrobbler:
     def __init__(self, config: Config):
@@ -31,25 +40,51 @@ class RadioScrobbler:
                 scope='user-read-recently-played playlist-modify-private')
             )
 
+    @staticmethod
+    def __decode_metadata(metadata: bytes) -> str:
+        """Decode the given metadata byte sequence into a string
+
+        Parameters
+        ----------
+        metadata : bytes
+            The byte sequence representing the metadata
+
+        Returns
+        -------
+        str
+            The decoded metadata as a string
+        """
+        try:
+            decoded_metadata = metadata.decode('utf-8')
+        except UnicodeDecodeError:
+            # Try a different encoding or use the 'ignore' error handling strategy
+            decoded_metadata = metadata.decode('latin-1', errors='ignore')
+        # TODO: Use other decoders and process possible exceptions
+        return decoded_metadata
+
     def get_artist_track(self):
-        d = dict()
-        request = urllib.request.Request(self.config.lastfm.stream_url)
-        request.add_header('Icy-MetaData', 1)
-        response = urllib.request.urlopen(request)
+        response = requests.get(
+            self.config.radios[0].stream_url,
+            headers={'Icy-MetaData': '1'},
+            stream=True
+        )
+        # Retrieve the Icy-MetaInt header
         icy_metaint_header = response.headers.get('icy-metaint')
 
-        if icy_metaint_header is not None:
+        if icy_metaint_header:
             metaint = int(icy_metaint_header)
-            read_buffer = metaint + 255
-            content = response.read(read_buffer)
-            data = str(content[metaint:])
-            p = re.compile(r'StreamTitle=(?P<track>[^;]+)')
-            s = re.search(p, data)
-            if s:
-                d = s.groupdict()
-            else:
-                d = None
-        return d
+            for chunk in response.iter_content(chunk_size=metaint + 255):
+                # Extract metadata from the chunk
+                metadata = self.__decode_metadata(chunk[metaint:])
+                track_match = re.search(r'StreamTitle=(?P<track>[^;]+)', metadata)
+
+                if track_match:
+                    track_info = track_match.group('track')
+                    artist, title = track_info.split(' - ')
+                    track = Track(artist=artist, title=title)
+                    return track
+
+        return None
 
     def scrobble(self, artist, title):
         timestamp = datetime.datetime.now()
@@ -64,17 +99,12 @@ class RadioScrobbler:
             self.sp.playlist_add_items(self.config.spotify.spotify_playlist_id[track_info])
 
     def start_scrobbling(self):
+        """Scrobbling tracks continiously"""
         while True:
             track = self.get_artist_track()
             if track and track != self.track_old:
-                tr = str(track["track"])
-                tr = tr.replace("'", "")
-                tr_info = tr.split(" - ")
-                if len(tr_info) < 2:
-                    tr_info = ["Unknown", tr]
-
-                print(tr_info)
-                self.scrobble(tr_info[0], tr_info[1])
+                print(track)
+                self.scrobble(track)
                 self.track_old = track
             time.sleep(1)
 
