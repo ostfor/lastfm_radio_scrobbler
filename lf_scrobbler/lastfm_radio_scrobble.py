@@ -8,10 +8,7 @@ import yaml
 import pylast
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-
-class Config():
-    def __init__(**kwargs) -> None:
-        self.__dict__ = kwargs
+from .config_schema import Config
 
 class RadioScrobbler:
     def __init__(self, config: Config):
