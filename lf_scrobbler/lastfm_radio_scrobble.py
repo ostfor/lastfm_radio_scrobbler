@@ -83,6 +83,14 @@ class RadioScrobbler:
         else:
             self.__logger.warning(f'Track {track} not found in spotify')
             return None
+
+    @staticmethod
+    def clean_track(track: Track) -> Track:
+        return Track(
+            artist=track.artist,
+            title=re.sub(r'\[.*?\]', '', track.title)
+        )
+
     def get_artist_track(self) -> Optional[Track]:
         """Get track from radio stream
 
@@ -110,7 +118,7 @@ class RadioScrobbler:
                 if track_match:
                     track_info = track_match.group('track')
                     artist, title = track_info.split(' - ')
-                    track = Track(artist=artist, title=title)
+                    track = self.clean_track(Track(artist=artist, title=title))
                     return track
 
         return None
