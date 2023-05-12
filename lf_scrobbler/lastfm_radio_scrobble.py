@@ -92,11 +92,16 @@ class RadioScrobbler:
 
         if (
             self.sp
+            and self.config.spotify
             and self.config.spotify.spotify_username
             and self.config.spotify.spotify_playlist_id
         ):
-            track_info = f"{artist} - {title}"
-            self.sp.playlist_add_items(self.config.spotify.spotify_playlist_id[track_info])
+            track_info = f"{track.artist} - {track.title}"
+            # TODO: Add multiple items by one request
+            self.sp.playlist_add_items(
+                playlist=self.config.spotify.spotify_playlist_id,
+                items=[track_info]
+            )
 
     def start_scrobbling(self):
         """Scrobbling tracks continiously"""
