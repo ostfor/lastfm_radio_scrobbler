@@ -38,8 +38,10 @@ lastfm:
   md5_password: hash
 
 spotify:
-  spotify_username: username
-  spotify_playlist_id: playlist_id
+  client_id: YOUR_SPOTIFY_CLIENT_ID
+  client_secret: YOUR_SPOTIFY_CLIENT_SECRET
+  redirect_url: YOUR_SPOTIFY_REDIRECT_URL
+  spotify_playlist_id: YOUR_SPOTIFY_PLAYLIST_ID
 
 radios:
   - name: Radio 1
@@ -53,15 +55,20 @@ radios:
 - 👤 `user_name`: The Last.fm username.
 - 🔐 `md5_password`: The MD5 hash of the Last.fm password.
 
-You need an API account. It can be created [here](https://www.last.fm/api/account/create).
+> You need an API account. It can be created [here](https://www.last.fm/api/account/create).
 
 ### Spotify Configuration
 
 The spotify section is optional and allows you to configure scrobbling to Spotify. It should have the following properties:
 
-- 🎵 `spotify_username`: Your Spotify username.
+- 🔑 `client_id`: Your Spotify client ID. Obtain this from the Spotify Developer Dashboard.
+- 🔑 `client_secret`: Your Spotify client secret. Obtain this from the Spotify Developer Dashboard.
+- 🔑 `redirect_url`: The redirect URL for your application. This can be set to <http://localhost:8888/callback> for console-based apps.
 - 🎶 `spotify_playlist_id`: The ID of the playlist where scrobbled songs will be added.
-You can copy Share Link to playlist and copy id which follows `playlist/`. (Example: `https://open.spotify.com/playlist/<playlist id>?...`)
+
+> Auth data should be copied form spotify app. It could be simply created from [Dev dashboard](https://developer.spotify.com/dashboard)
+
+> You can copy Share Link to playlist and copy id which follows `playlist/`. (Example: `https://open.spotify.com/playlist/<playlist id>?...`)
 
 ### Radio Configuration
 

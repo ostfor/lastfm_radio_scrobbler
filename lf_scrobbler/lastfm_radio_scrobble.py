@@ -40,7 +40,11 @@ class RadioScrobbler:
         if self.config.spotify:
             self.sp = spotipy.Spotify(
                 auth_manager=SpotifyOAuth(
-                scope='user-read-recently-played playlist-modify-private')
+                    scope='user-read-recently-played playlist-modify-private playlist-modify-public',
+                    client_id=self.config.spotify.client_id,
+                    client_secret=self.config.spotify.client_secret,
+                    redirect_uri=self.config.spotify.redirect_url  # Optional, provide if necessary
+                )
             )
 
     @staticmethod
@@ -65,6 +69,20 @@ class RadioScrobbler:
         # TODO: Use other decoders and process possible exceptions
         return decoded_metadata
 
+    def search_spotify_track(self, track: Track) -> Optional[str]:
+        # Search for the track
+        if not self.sp:
+            self.__logger.warning(f'Cannot search track beecause not authorised in spotify')
+            return None
+        search_query = f'artist:{track.artist} track:{track.title}'
+        results = self.sp.search(search_query, type='track', limit=1)
+        # Extract the track URI from the search results
+        if results['tracks']['items']:
+            track_uri = results['tracks']['items'][0]['uri']
+            return track_uri
+        else:
+            self.__logger.warning(f'Track {track} not found in spotify')
+            return None
     def get_artist_track(self) -> Optional[Track]:
         """Get track from radio stream
 
@@ -109,18 +127,14 @@ class RadioScrobbler:
         timestamp = datetime.datetime.now()
         self.network.scrobble(track.artist, track.title, timestamp)
 
-        if (
-            self.sp
-            and self.config.spotify
-            and self.config.spotify.spotify_username
-            and self.config.spotify.spotify_playlist_id
-        ):
-            track_info = f"{track.artist} - {track.title}"
+        if self.sp and self.config.spotify:
+            track_uri = self.search_spotify_track(track)
             # TODO: Add multiple items by one request
-            self.sp.playlist_add_items(
-                playlist=self.config.spotify.spotify_playlist_id,
-                items=[track_info]
-            )
+            if track_uri:
+                self.sp.playlist_add_items(
+                    self.config.spotify.spotify_playlist_id,
+                    [track_uri]
+                )
 
     def start_scrobbling(self):
         """Scrobbling tracks continiously"""

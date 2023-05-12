@@ -15,7 +15,9 @@ class LastFMConfig(BaseModel):
 
 
 class SpotifyConfig(BaseModel):
-    spotify_username: str
+    client_id: str
+    client_secret: str
+    redirect_url: str
     spotify_playlist_id: str
 
 
