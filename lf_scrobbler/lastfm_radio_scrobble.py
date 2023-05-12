@@ -62,7 +62,15 @@ class RadioScrobbler:
         # TODO: Use other decoders and process possible exceptions
         return decoded_metadata
 
-    def get_artist_track(self):
+    def get_artist_track(self) -> Optional[Track]:
+        """Get track from radio stream
+
+        Returns
+        -------
+        Optional[Track]
+            Track instance if track metadata found, None otherwise
+        """
+        # TODO: get stream frome more than one radio
         response = requests.get(
             self.config.radios[0].stream_url,
             headers={'Icy-MetaData': '1'},
@@ -86,9 +94,17 @@ class RadioScrobbler:
 
         return None
 
-    def scrobble(self, artist, title):
+
+    def scrobble(self, track: Track):
+        """Scrobble one track
+
+        Parameters
+        ----------
+        Ttrack : Track
+            Track instance whic should be added
+        """
         timestamp = datetime.datetime.now()
-        self.network.scrobble(artist, title, timestamp)
+        self.network.scrobble(track.artist, track.title, timestamp)
 
         if (
             self.sp
@@ -112,6 +128,7 @@ class RadioScrobbler:
                 self.scrobble(track)
                 self.track_old = track
             time.sleep(1)
+
 
 def main():
     # Parse args
