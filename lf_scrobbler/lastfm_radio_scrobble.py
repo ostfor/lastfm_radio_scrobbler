@@ -1,4 +1,6 @@
 import argparse
+import logging
+from pathlib import Path
 import re
 import time
 import datetime
@@ -21,6 +23,7 @@ class Track(NamedTuple):
 
 class RadioScrobbler:
     def __init__(self, config: Config):
+        self.__logger = logging.getLogger(__name__)
         self.config = config
         self.track_old = None
 
@@ -124,28 +127,38 @@ class RadioScrobbler:
         while True:
             track = self.get_artist_track()
             if track and track != self.track_old:
-                print(track)
+                self.__logger.info(track)
                 self.scrobble(track)
                 self.track_old = track
             time.sleep(1)
 
 
 def main():
+    logger = logging.getLogger(__name__)
     # Parse args
     parser = argparse.ArgumentParser(
         description='Scrobble radio playlists to Last.fm and Spotify'
     )
-    parser.add_argument('--config', '-c', help='path to YAML configuration file')
+    parser.add_argument(
+        '--config', '-c',
+        help='path to YAML configuration file',
+        default=Path('~/.confiig/radio-scrobble/config.yaml')
+    )
     args = parser.parse_args()
 
     if args.config:
-        with open(args.config, 'r') as config_file:
-            config_data = yaml.safe_load(config_file)
-        config = Config(**config_data)
+        if Path(args.config).exists():
+            with open(args.config, 'r') as config_file:
+                config_data = yaml.safe_load(config_file)
+            config = Config(**config_data)
+        else:
+            logger.error(f'Config {args.config} not found!')
+            exit(1)
 
     # Start scrobbling
     scrobbler = RadioScrobbler(config)
     scrobbler.start_scrobbling()
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.INFO)
     main()
