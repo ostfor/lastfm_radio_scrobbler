@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=radio_scrobbler_plugin
+Configurable=radio_scrobbler_plugin.RadioScrobblerConfigurable
+Name=Radio Scrobbler
+Description=Plugin for scrobbling internet radio tracks to Last.fm
+Authors=Denis
+Copyright=Copyright (c) Denis 2023
+Website=https://github.com/ostfor/radio_scrobbler/tree/master
