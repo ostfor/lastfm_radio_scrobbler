@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "radio-scrobble"
+name = "radio_scrobble"
 description = "Radio scrobble to lastfm and spotify"
 version = "0.1.0"
 readme = "README.md"
