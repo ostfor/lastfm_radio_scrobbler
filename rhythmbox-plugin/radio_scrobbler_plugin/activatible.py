@@ -1,16 +1,60 @@
+import csv
+import datetime
 import logging
-import gi
 import yaml
-
-from gi.repository import GObject, Peas, RB, Gio
 from pathlib import Path
+# from lf_scrobbler.lastfm_radio_scrobble import RadioScrobbler
+# from lf_scrobbler.config_schema import Config, Radio
 
-from lf_scrobbler.lastfm_radio_scrobble import RadioScrobbler
-from lf_scrobbler.config_schema import Config, Radio
-
-
-from gi.repository import RB
+import gi
 gi.require_version('Gtk', '3.0')
+from gi.repository import GObject, Peas, Gio, Gtk, Gdk
+# from gi.repository import RB
+
+
+
+class TrackListWindow(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title="Track List")
+        self.set_default_size(350, 400)
+
+        self.tree_view = Gtk.TreeView()
+        self.tree_view.connect('row-activated', self.on_row_activated)
+        self.add(self.tree_view)
+
+        # Add the Status column
+        renderer_text = Gtk.CellRendererText()
+        column_text = Gtk.TreeViewColumn("Status", renderer_text, text=0)
+        self.tree_view.append_column(column_text)
+
+        # Add the Track column
+        renderer_text = Gtk.CellRendererText()
+        column_text = Gtk.TreeViewColumn("Track", renderer_text, text=1)
+        self.tree_view.append_column(column_text)
+        self.load_tracks(Path('~/tracks.csv').expanduser())
+
+    def load_tracks(self, fname):
+        self.list_store = Gtk.ListStore(str, str)
+
+        with open(fname, 'r') as csv_file:
+            reader = csv.reader(csv_file)
+            sorted_list = sorted(reader, key=lambda row: datetime.datetime.strptime(row[0], '%Y-%m-%d'), reverse=True)
+            for row in sorted_list:
+                self.list_store.append(["🎵", row[1]])
+
+        self.tree_view.set_model(self.list_store)
+
+    def on_row_activated(self, tree_view, path, column):
+        if column.get_title() == 'Status':
+            tree_iter = self.list_store.get_iter(path)
+            self.list_store.set_value(tree_iter, 0, "✅")
+            self.tree_view.set_cursor(path, column, start_editing=False)
+            track = self.list_store.get_value(tree_iter, 1)
+            self.on_scrobble_button_clicked(track)
+
+    def on_scrobble_button_clicked(self, track):
+        logging.error('Click')
+        # You can implement your scrobbling logic here
 
 class RadioScrobblerActivatable(GObject.Object, Peas.Activatable):
     __gtype_name__ = 'RadioScrobblerActivatable'
@@ -28,12 +72,16 @@ class RadioScrobblerActivatable(GObject.Object, Peas.Activatable):
         # Connect the action to a method
         self.action.connect("activate", self.on_scrobble_button_clicked)
 
+    def on_scrobble_button_clicked(self, action, parameter):
+        win = TrackListWindow()
+        win.connect("delete-event", Gtk.main_quit)
+        win.show_all()
+        Gtk.main()
 
     def do_activate(self):
         # Get the main window from the shell
         app = self.object.props.application
 
-        # # Connect the button to the action
         # Add the action to an action group
         app.add_action(self.action)
 
@@ -42,35 +90,7 @@ class RadioScrobblerActivatable(GObject.Object, Peas.Activatable):
         item.set_detailed_action('app.start_scrobbling')
         app.add_plugin_menu_item('tools', 'scrobble-radio', item)
 
-    def on_scrobble_button_clicked(self, action, parameter):
 
-        PROP = [
-            RB.RhythmDBPropType.ENTRY_ID, RB.RhythmDBPropType.TITLE, RB.RhythmDBPropType.GENRE, RB.RhythmDBPropType.ARTIST, RB.RhythmDBPropType.ALBUM, RB.RhythmDBPropType.TRACK_NUMBER, RB.RhythmDBPropType.DISC_NUMBER, RB.RhythmDBPropType.DURATION, RB.RhythmDBPropType.FILE_SIZE, RB.RhythmDBPropType.LOCATION, RB.RhythmDBPropType.MOUNTPOINT, RB.RhythmDBPropType.MTIME, RB.RhythmDBPropType.FIRST_SEEN, RB.RhythmDBPropType.LAST_SEEN, RB.RhythmDBPropType.RATING, RB.RhythmDBPropType.PLAY_COUNT, RB.RhythmDBPropType.LAST_PLAYED, RB.RhythmDBPropType.BITRATE, RB.RhythmDBPropType.DATE, RB.RhythmDBPropType.REPLAYGAIN_TRACK_GAIN, RB.RhythmDBPropType.REPLAYGAIN_TRACK_PEAK, RB.RhythmDBPropType.REPLAYGAIN_ALBUM_GAIN, RB.RhythmDBPropType.REPLAYGAIN_ALBUM_PEAK, RB.RhythmDBPropType.MEDIA_TYPE, RB.RhythmDBPropType.TITLE_SORT_KEY, RB.RhythmDBPropType.GENRE_SORT_KEY, RB.RhythmDBPropType.ARTIST_SORT_KEY, RB.RhythmDBPropType.ALBUM_SORT_KEY, RB.RhythmDBPropType.TITLE_FOLDED, RB.RhythmDBPropType.GENRE_FOLDED, RB.RhythmDBPropType.ARTIST_FOLDED, RB.RhythmDBPropType.ALBUM_FOLDED, RB.RhythmDBPropType.LAST_PLAYED_STR, RB.RhythmDBPropType.HIDDEN, RB.RhythmDBPropType.PLAYBACK_ERROR, RB.RhythmDBPropType.FIRST_SEEN_STR, RB.RhythmDBPropType.LAST_SEEN_STR, RB.RhythmDBPropType.SEARCH_MATCH, RB.RhythmDBPropType.YEAR, RB.RhythmDBPropType.KEYWORD, RB.RhythmDBPropType.STATUS, RB.RhythmDBPropType.DESCRIPTION, RB.RhythmDBPropType.SUBTITLE, RB.RhythmDBPropType.SUMMARY, RB.RhythmDBPropType.LANG, RB.RhythmDBPropType.COPYRIGHT, RB.RhythmDBPropType.IMAGE, RB.RhythmDBPropType.POST_TIME, RB.RhythmDBPropType.MB_TRACKID, RB.RhythmDBPropType.MB_ARTISTID, RB.RhythmDBPropType.MB_ALBUMID, RB.RhythmDBPropType.MB_ALBUMARTISTID, RB.RhythmDBPropType.MB_ARTISTSORTNAME, RB.RhythmDBPropType.ALBUM_SORTNAME, RB.RhythmDBPropType.ARTIST_SORTNAME_SORT_KEY, RB.RhythmDBPropType.ARTIST_SORTNAME_FOLDED, RB.RhythmDBPropType.ALBUM_SORTNAME_SORT_KEY, RB.RhythmDBPropType.ALBUM_SORTNAME_FOLDED, RB.RhythmDBPropType.COMMENT, RB.RhythmDBPropType.ALBUM_ARTIST, RB.RhythmDBPropType.ALBUM_ARTIST_SORT_KEY, RB.RhythmDBPropType.ALBUM_ARTIST_FOLDED, RB.RhythmDBPropType.ALBUM_ARTIST_SORTNAME, RB.RhythmDBPropType.ALBUM_ARTIST_SORTNAME_SORT_KEY, RB.RhythmDBPropType.ALBUM_ARTIST_SORTNAME_FOLDED, RB.RhythmDBPropType.BEATS_PER_MINUTE
-            ]
-        logging.info('Start scrobbling')
-        # Get the Rhythmbox player object
-        player = self.object.props.shell_player
-
-        # Get the currently playing entry
-        entry = player.get_playing_entry()
-
-        # Check if an entry is currently playing
-        if entry is not None:
-            # Get the URL of the currently playing entry
-            config: Config = self.load_config()
-            for prop in PROP:
-                try:
-                    logging.error(entry.get_string(prop))
-                except:
-                    pass
-            radio_url = entry.get_string(RB.RhythmDBPropType.URL)
-            config.radios.insert(0, Radio('Playing now', radio_url))
-            logging.error(config.json())
-            # Call the RadioScrobbler listen method with the radio URL
-            RadioScrobbler(config=self.plugin.config).start_scrobbling()
-        else:
-            # No radio currently playing
-            print("No radio currently playing")
 
 
     def do_deactivate(self):
@@ -93,3 +113,9 @@ class RadioScrobblerActivatable(GObject.Object, Peas.Activatable):
     def get_config_path(self):
         config_dir = self.plugin_info.get_module_dir()
         return Path(config_dir) / 'scrobbler.yaml'
+
+if __name__ == "__main__":
+    win = TrackListWindow()
+    win.connect("delete-event", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
