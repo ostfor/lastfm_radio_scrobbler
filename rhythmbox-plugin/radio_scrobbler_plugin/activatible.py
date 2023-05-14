@@ -18,19 +18,29 @@ class TrackListWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="Track List")
         self.set_default_size(350, 400)
 
+        vbox = Gtk.VBox(spacing=10)  # Create a vertical box container
+
+        # Add instruction label
+        instruction_label = Gtk.Label()
+        instruction_label.set_text("Double click on Srobble emoji (🎵)")
+        vbox.pack_start(instruction_label, False, False, 0)
+
         self.tree_view = Gtk.TreeView()
         self.tree_view.connect('row-activated', self.on_row_activated)
-        self.add(self.tree_view)
+        vbox.pack_start(self.tree_view, True, True, 0)
 
         # Add the Status column
         renderer_text = Gtk.CellRendererText()
-        column_text = Gtk.TreeViewColumn("Status", renderer_text, text=0)
+        column_text = Gtk.TreeViewColumn("Srobble", renderer_text, text=0)
         self.tree_view.append_column(column_text)
 
         # Add the Track column
         renderer_text = Gtk.CellRendererText()
         column_text = Gtk.TreeViewColumn("Track", renderer_text, text=1)
         self.tree_view.append_column(column_text)
+
+        self.add(vbox)
+
         self.load_tracks(Path('~/tracks.csv').expanduser())
 
     def load_tracks(self, fname):
